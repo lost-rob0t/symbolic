@@ -1,0 +1,53 @@
+#+TITLE: Symbolic
+#+SUBTITLE: Canonical local-first meta knowledge base for the operator's machine
+
+Symbolic is a Prolog-authoritative world model of this computer: hosts,
+processes, services, packages, files, source code, repositories,
+documentation, APIs, desktop activity, notifications, ActivityWatch events,
+OpenCode/agent sessions, Android devices, and user-authored facts.
+
+Agents query the world model with provenance: every accepted fact can show
+what asserted it, when, from what source, and (for derived knowledge) the
+exact rule chain that produced it.
+
+#+BEGIN_EXAMPLE
+real world observations
+      v
+canonical structured observations  (collectors)
+      v
+LLM semantic extraction            (candidate knowledge only)
+      v
+Prolog facts + declared rules      (kb_rule/3, explain/2)
+      v
+experts / symbolic MoE router      (mixture of symbolic experts)
+      v
+agents solve tasks
+      v
+validated learning                 (five-agent council, governance)
+      v
+improved KB
+#+END_EXAMPLE
+
+* Quick start
+
+#+BEGIN_EXAMPLE
+make test          # plunit suites
+swipl -s prolog/symbolic.pl -t "kb_status(S), print(S), halt"
+make ingest        # run local collectors (when available)
+make doctor        # health checks (when available)
+#+END_EXAMPLE
+
+* Principles
+
+1. One traversable graph. An OpenCode session links to a repository, a file,
+   a component, a service failure, a commit, a doc, an activity event.
+2. Prolog is the source of truth. No vector store, no chat log, is
+   authoritative. LLMs classify, extract, and propose.
+3. Candidate knowledge is quarantined until validated: schema checks, Prolog
+   checks, shadow evaluation, council vote (4/5 additive, 5/5 breaking).
+4. Secrets are redacted before persistence or transmission.
+5. Incremental by content hash: unchanged inputs are never reprocessed.
+
+* Status
+
+See docs/architecture.org for the iteration log and decision records.

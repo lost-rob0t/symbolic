@@ -1,0 +1,8 @@
+var/
+.prolog/runs/
+.prolog/result.json
+.prolog/facts.kb
+.prolog/verify.pl
+__pycache__/
+*.pyc
+result

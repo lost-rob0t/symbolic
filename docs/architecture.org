@@ -1,0 +1,68 @@
+#+TITLE: Architecture decision log
+#+PROPERTY: header-args :results silent
+
+* Iteration 1 — repo/bootstrap + core ontology (Auto-RAGE)
+
+** Run identity
+- Consumed issue :: slice 1 (repo/bootstrap) of the Symbolic foundation spec
+- Branch :: main (initial; no prior HEAD existed)
+- Date :: 2026-09-19
+
+** Analyze (verified environment facts)
+- Arch Linux, kernel 7.2.6-arch2-1, qtile 0.36.1, hostname =flake=
+- SWI-Prolog 10.0.2 via nix profile
+- OpenCode 1.18.30; config ~/.config/opencode; state ~/.local/share/opencode
+  (SQLite opencode.db + storage/{session,project,message,part,todo})
+- ActivityWatch aw-server-rust v0.13.2 on 127.0.0.1:5600
+- systemd user services: zara-desktop, zara-wake, zara-patched-6060, dunst,
+  llm-log, opencode-web, syncthing, org-logseq-sync, forgejo-runner
+- dotfiles repo ~/.dotfiles (remotes: forgejo nsaspy/dotfiles, github lost-rob0t/dotfiles)
+- gh + tea available; nix 2.33.2 + home-manager 26.11-pre; sbcl, node, bun present
+- No Android SDK installed yet
+
+** Design decisions (recorded, Auto-RAGE)
+1. *Prolog-authoritative KB.* SWI-Prolog modules under ontology/ hold the
+   world model; a tagged-rule meta-interpreter (kb_rule/3 + explain/2)
+   produces proof graphs. Rejected: vector-DB primary store (opaque, no
+   symbolic proof); SQL primary store (no inference).
+2. *Epistemic lattice.* observation/claim/proposal/fact/inference/hypothesis/
+   rejected are distinct statuses in a single knowledge registry
+   (register_knowledge/3). Rejected: separate predicates per status
+   (no uniform provenance).
+3. *Declared rules are knowledge.* Derived relations agents rely on
+   (time_spent/3, port_owner/2, owning_package/2, ...) are declared with
+   declare_rule/3 and provable via explain/2 with rule attribution.
+4. *Governance as Prolog.* council_role/1, approval_threshold/2,
+   quorum_met/1, promotable/1, shadow evaluation, promote/1 — the five-agent
+   council (4/5 additive, 5/5 breaking) is executable policy.
+5. *Module discipline.* Rules execute in their declaring module; explain/2
+   is meta_predicate/0 on the goal so callers query from any module;
+   leaf nodes record the defining module.
+
+** Adversarial review findings (fixed before realize)
+- Module-context loss in explain/2 (goal resolution failed from foreign
+  modules) — fixed via meta_predicate + strip_module + explicit module
+  threading through prove/prove_body.
+- use_module(ModuleName) does not resolve loaded modules in SWI 10 — rule
+  files use relative file paths.
+- Integer/float unification traps in interval durations (parse_time returns
+  floats) — tests compare arithmetically.
+- promote/1 could mark proposals blocked as a side effect during voting —
+  removed; state changes only on real transitions.
+- changed_together/2 had a duplicated subgoal; commit_affects/2 had a wrong
+  definitional restriction — fixed.
+
+** Acceptance criteria for this slice
+- [X] Repository initialized; layout per spec with justified deviations
+- [X] Core ontology + provenance + learning modules load as one KB
+- [X] plunit suites pass: 28/28 (core, provenance+explanation, governance)
+- [X] Explanation graph renders human-readable proof with rule attribution
+- [X] Shadow rules excluded from production inference
+- [X] AGENTS.md records Auto-RAGE mode and policies
+
+** Next dependencies
+- Prolog-RLM harness (user-directed): file mining, custom tools
+  (kb_query, kb_assert_candidate, brave, web fetch, wikipedia), source-code
+  parser -> KB, symbolic MoE expert router
+- ActivityWatch collector (user-directed priority)
+- Prolog HTTP server + CLI
