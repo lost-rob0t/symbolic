@@ -42,7 +42,7 @@ test(rule_declare_and_explain) :-
     test_dir(Dir),
     atomic_list_concat([Dir, '/../../prolog/rules/activity_rules.pl'], RulesFile),
     consult(RulesFile),
-    assertz(activity:application_session_i(emacs, '2026-09-19T10:00:00Z', '2026-09-19T11:00:00Z')),
+    assertz(activity:application_session_i(emacs, '2026-09-19T10:00:00Z', '2026-09-19T11:00:00Z', sess_1)),
     explain(time_spent(emacs, Interval, Duration), Proof),
     Interval == interval('2026-09-19T10:00:00Z', '2026-09-19T11:00:00Z'),
     Duration =:= 3600,
