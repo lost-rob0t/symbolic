@@ -199,3 +199,25 @@
 - Prolog HTTP server + CLI surface (symbolic query/explain/code/docs/...)
 - collectors: systemd, proc, packages, git; OpenCode session ingestion
 - LLM extractor with redaction; council automation over proposals
+
+* Iteration 3b — debug findings (Auto-RAGE, recorded)
+
+- SWI 10.0.2 crashes (silent exit 1) when a goal term containing an unbound
+  variable flows through moe_route's try_chain/== comparison path; bound
+  goals are unaffected (verified across 10.0.2 and 9.2.9). moe_route/3 now
+  enforces ground(Goal) — routing keys on goal shape; results are returned
+  via the outcome term, not the goal.
+- debug/1 collides with a SWI built-in when used unqualified in scripts;
+  always qualify domain goals (software_debugger:debug/1 contract is
+  unaffected inside the registry).
+- Service unit names with dots (llm-log.service) must be quoted: X.Y
+  parses as dict access.
+
+** Verification evidence
+- 43/43 plunit tests; prolog-verify check passed (rlm-harness-moe-mining)
+- Live end-to-end: self-mine 46 files; MoE fall-through route
+  kb_code -> kb_code_expert (47); debug route -> software_debugger with
+  evidence-backed candidate_cause; explain/2 proof graph for
+  time_spent(emacs, _, 5400s); selections recorded as inferences
+- Live ActivityWatch: 100 real events collected + ingested with
+  provenance and dedup

@@ -20,6 +20,7 @@ moe_register(Registry, Contract, Keywords) :-
     assertz(expert_keywords_i(Contract.id, Keywords)).
 
 moe_route(Registry, Goal, Outcome) :-
+    ground(Goal),
     moe_rank(Registry, Goal, Ranked),
     (   Ranked == []
     ->  Outcome = error(expert_error{kind:no_expert, detail:Goal})
@@ -33,19 +34,18 @@ moe_route(Registry, Goal, Outcome) :-
 
 try_chain([], _Goal, error(expert_error{kind:all_experts_failed, detail:none}), []).
 try_chain([best(Contract, Score)|Rest], Goal, Outcome, [at(Contract.id, Status)|Tail]) :-
-    run_handler(Contract, Goal, Value, Status),
-    (   Status == ok
-    ->  Outcome = ok(Value, Contract, Score),
+    (   run_handler(Contract, Goal, Value, ok)
+    ->  Status = ok,
+        Outcome = ok(Value, Contract, Score),
         Tail = []
-    ;   try_chain(Rest, Goal, Outcome, Tail)
+    ;   Status = failed,
+        try_chain(Rest, Goal, Outcome, Tail)
     ).
 
 run_handler(Contract, Goal, Value, ok) :-
     Handler = Contract.handler,
     catch(call(Handler, Goal, moe, Value), _, fail),
-    \+ Value = error(_),
-    !.
-run_handler(_Contract, _Goal, error(handler_failed), failed).
+    \+ Value = error(_).
 
 moe_rank(Registry, Goal, Ranked) :-
     expert_catalog(Registry, Contracts),
