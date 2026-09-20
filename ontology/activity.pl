@@ -21,7 +21,7 @@ usage_session(Device, App, Start, End) :-
     usage_session_i(Device, App, Start, End, _).
 
 application_session(App, interval(Start, End)) :-
-    application_session_i(App, Start, End).
+    application_session_i(App, Start, End, _).
 
 afk_interval(interval(Start, End)) :-
     afk_interval_i(Start, End, _).
