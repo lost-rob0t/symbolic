@@ -6,7 +6,7 @@
               returns/3,
               requires_auth/2,
               defined_by/2,
-              documented_by/2,
+              api_documented_by/2,
               api_format/2,
               schema_key/3
           ]).
@@ -46,7 +46,7 @@ requires_auth(Endpoint, Scheme) :-
 defined_by(Api, Source) :-
     defined_by_i(Api, Source).
 
-documented_by(Api, Doc) :-
+api_documented_by(Api, Doc) :-
     documented_by_api_i(Api, Doc).
 
 api_format(A, F) :-

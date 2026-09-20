@@ -1,6 +1,7 @@
 :- module(source_code, [
               repository/1,
               project/1,
+              project_root_dir/2,
               source_file/1,
               test_file/1,
               language/2,
@@ -15,19 +16,19 @@
               namespace/2,
               tests/2,
               configures/2,
-              depends_on/2,
+              project_depends_on/2,
               file_in_repo/3,
-              repo_head/2,
-              repo_remote/3,
-              repo_branch/2,
-              repo_dirty/1,
               last_changed/3,
-              introduced_by/3,
+              introduced_by/4,
               changed_together/2,
               commit_affects/2,
               commit_author/3,
               commit_time/2,
-              commit_touches/2
+              commit_touches/2,
+              repo_remote/4,
+              repo_branch/3,
+              repo_dirty/2,
+              repo_head/3
           ]).
 
 :- use_module(core).
@@ -38,7 +39,7 @@
 :- dynamic language_i/2.
 :- dynamic defines_i/4.
 :- dynamic references_i/4.
-:- dynamic imports_i/3.
+:- dynamic imports_i/2.
 :- dynamic exports_i/3.
 :- dynamic calls_i/4.
 :- dynamic implements_i/4.
@@ -58,7 +59,7 @@
 :- dynamic introduced_by_i/4.
 :- dynamic commit_author_i/4.
 :- dynamic commit_time_i/3.
-:- dynamic commit_touches_i/3.
+:- dynamic commit_touches_i/2.
 :- dynamic source_index_hash_i/3.
 
 repository(R) :-
@@ -66,6 +67,9 @@ repository(R) :-
 
 project(P) :-
     project_i(P, _).
+
+project_root_dir(P, Dir) :-
+    project_i(P, Dir).
 
 source_file(F) :-
     language_i(F, _).
@@ -109,7 +113,7 @@ tests(TestFile, Target) :-
 configures(File, What) :-
     configures_i(File, What).
 
-depends_on(Project, Dependency) :-
+project_depends_on(Project, Dependency) :-
     depends_on_i(Project, Dependency).
 
 file_in_repo(File, Repo, RelPath) :-

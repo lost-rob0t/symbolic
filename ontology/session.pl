@@ -22,7 +22,7 @@
 
 :- use_module(core).
 :- use_module(provenance).
-:- use_module(agent_ontology).
+:- use_module(agent).
 :- use_module(source_code).
 
 :- dynamic session_i/2.
@@ -100,4 +100,4 @@ sessions_touching_file(File, S) :-
     session_touched_i(S, File).
 
 project_for_dir(Dir, Project) :-
-    source_code:project_i(Project, Dir).
+    source_code:project_root_dir(Project, Dir).

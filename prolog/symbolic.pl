@@ -19,11 +19,32 @@ symbolic_load_all(Root) :-
     forall(member(F, FactFiles), ensure_loaded(F)),
     format(atom(GenGlob), '~w/prolog/generated/*.pl', [Root]),
     expand_file_name(GenGlob, GenFiles),
-    forall(member(F, GenFiles), ensure_loaded(F)).
+    forall(member(F, GenFiles), ensure_loaded(F)),
+    format(atom(HarnFile), '~w/rlm/harness/symbolic_rlm.pl', [Root]),
+    ensure_loaded(HarnFile),
+    format(atom(MineGlob), '~w/rlm/mining/*.pl', [Root]),
+    expand_file_name(MineGlob, MineFiles),
+    forall(member(F, MineFiles), ensure_loaded(F)),
+    format(atom(ToolGlob), '~w/rlm/tools/*.pl', [Root]),
+    expand_file_name(ToolGlob, ToolFiles),
+    forall(member(F, ToolFiles), ensure_loaded(F)),
+    format(atom(MoeFile), '~w/rlm/experts/symbolic_moe.pl', [Root]),
+    ensure_loaded(MoeFile),
+    format(atom(ExpGlob2), '~w/rlm/experts/*.pl', [Root]),
+    expand_file_name(ExpGlob2, ExpFiles2),
+    forall((member(F, ExpFiles2),
+            \+ sub_atom(F, _, _, _, 'symbolic_moe')),
+           ensure_loaded(F)).
 
 ensure_loaded(File) :-
+    loaded_rlm_file(File),
+    !.
+ensure_loaded(File) :-
     exists_file(File),
+    assertz(loaded_rlm_file(File)),
     consult(File).
+
+:- dynamic loaded_rlm_file/1.
 
 registry(provenance:knowledge_i/2).
 registry(provenance:asserted_at_i/2).
@@ -67,6 +88,21 @@ registry(source_code:defines_i/4).
 registry(source_code:language_i/2).
 registry(source_code:file_in_repo_i/3).
 registry(documentation:documents_i/2).
+registry(learning:proposal_i/3).
+registry(learning:proposal_state_i/2).
+registry(learning:vote_i/4).
+registry(learning:shadow_result_i/3).
+registry(learning:rejection_i/3).
+registry(file_mine:source_hash_i/3).
+registry(file_mine:mined_repo_i/2).
+registry(symbolic_moe:expert_keywords_i/2).
+registry(symbolic_moe:moe_selection_i/4).
+registry(expert_registry_compat:registry_entry/3).
+registry(expert_registry_compat:registry_alive/1).
+registry(source_code:imports_i/2).
+registry(source_code:repo_head_i/3).
+registry(documentation:doc_section_i/3).
+registry(documentation:doc_format_i/2).
 registry(notification:notification_i/2).
 
 kb_reset :-
@@ -86,8 +122,9 @@ kb_status(status{knowledge_items: KI, observations: OB, claims: CL, facts: FA, i
                           \+ provenance:rejected_rule(Id)), RL).
 
 :- (   prolog_load_context(source, Src),
-       file_directory_name(Src, Root),
+       file_directory_name(Src, PrologDir),
+       file_directory_name(PrologDir, Root),
        symbolic_load_all(Root)
    ->  true
-   ;   print_message(error, symbolic_load_failed)
+   ;   format(user_error, 'symbolic: knowledge base load failed~n', [])
    ).

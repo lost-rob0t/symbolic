@@ -1,7 +1,7 @@
 :- module(filesystem, [
               file/1,
               directory/1,
-              project_root/2,
+              project_root/3,
               file_path/2,
               file_ext/2,
               file_size/2,

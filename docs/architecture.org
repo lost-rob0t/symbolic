@@ -129,3 +129,73 @@
   query =application_session_i/3= while the declared predicate is =/4=;
   ontology slice must update the wrapper (documented in
   docs/collectors.org) so =time_spent/3= sees AW sessions.
+
+* Iteration 3 — Prolog-RLM harness, symbolic MoE, file mining (Auto-RAGE)
+
+** Run identity
+- Branch :: main (after merge of rage/2-activitywatch at b910e41)
+- Date :: 2026-09-19
+
+** Decision record
+1. *Registry backend.* The real Prolog-RLM lives at
+   ~/Documents/Projects/prolog-rlm (canonical main 51d2530). Its
+   rlm_expert.pl expert registry exists only on the unmerged
+   codex-symbolic-experts branch. Decision: rlm/harness/symbolic_rlm.pl is a
+   facade that dispatches registry calls to upstream rlm_expert when
+   SYMBOLIC_PROLOG_RLM points at a checkout containing it, otherwise to a
+   bundled compat registry implementing the same published contract
+   (expert_contract{id,version,goal:Op/Arity,priority,requires,handler},
+   Handler(+Goal,+Context,-Value)). Same predicate names either way; no
+   Symbolic code changes when upstream merges.
+2. *Symbolic MoE.* Mixture-of-experts implemented purely symbolically in
+   Prolog (rlm/experts/symbolic_moe.pl): experts carry keyword sets, the
+   router scores priority + keyword overlap over the goal term, tries
+   experts in rank order with fall-through on failure, records every
+   selection as a provenance-tracked inference, and moe_council/5 asks the
+   top-K experts and unions their answers.
+3. *Tools as experts.* kb_query, kb_explain, kb_related, kb_assert_candidate,
+   kb_search_code, kb_search_docs, kb_git_history, kb_services,
+   kb_sessions, kb_debug_ctx, brave (bx context), web_fetch,
+   wikipedia (REST summary + search) are registered experts with keyword
+   sets; any Prolog-RLM or MCP client can invoke them through the registry.
+4. *File mining.* rlm/mining/file_mine.pl walks a repository (depth-bounded,
+   skipping VCS/build dirs), fingerprints files with sha1 for incremental
+   re-mining, and extracts language/source_code/documentation facts with
+   per-language line handlers (prolog module/use_module, python def/class/
+   import, elisp defun/defvar/defcustom/defmacro, lisp defun/defpackage,
+   js/ts function/class/import, rust fn/struct/trait, go func/type, nix
+   options, org/markdown headings). Facts carry the content hash.
+5. *Debugger expert.* prolog/experts/debug_rules.pl declares candidate_cause
+   rules (broken service, package changed this week owning the subject path,
+   prior failed session about the subject, documentation gap); the
+   software_debugger expert returns candidates WITH rendered proof graphs,
+   so causes stay hypotheses with evidence, never assertions.
+
+** Adversarial findings fixed during realize
+- use_module(ModuleName) does not resolve loaded modules (recurring); all
+  cross-module imports now use relative file paths.
+- depends_on/2 exported by both provenance and source_code -> renamed the
+  source_code one to project_depends_on/2.
+- 0'X char-code integers never equal atom_chars atoms -> balance Strip
+  compared '(' as atom; balance must strip at the head of the reversed
+  list (append-tail variant can never match).
+- call(Goal, Arg) appends an argument: inline disjunction handlers got
+  arity errors silently; replaced with per-language handler closures.
+- add_defines fails on known symbols, poisoning the scan line; scan loop
+  now ignores handler failures per line.
+- compat registry create must accept caller-supplied registry names.
+
+** Acceptance criteria
+- [X] 43/43 plunit tests green (core 8, provenance 9, governance 10,
+      aw_ingest 5, rlm_harness 9, file_mining 2)
+- [X] symbolic MoE routing proven by tests incl. fall-through + provenance
+- [X] candidate -> five-agent council -> promotion pipeline tested
+      end-to-end (fact lands with provenance after 5/5 vote)
+- [X] file mining incremental (hashes stable across re-mine; edits detected)
+- [X] debugger returns proof-backed candidates from fixture facts
+- [X] web tools present (brave via bx, web_fetch, wikipedia REST)
+
+** Next dependencies
+- Prolog HTTP server + CLI surface (symbolic query/explain/code/docs/...)
+- collectors: systemd, proc, packages, git; OpenCode session ingestion
+- LLM extractor with redaction; council automation over proposals

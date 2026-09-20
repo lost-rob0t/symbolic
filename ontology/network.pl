@@ -1,6 +1,6 @@
 :- module(network, [
               interface/1,
-              interface_addr/2,
+              interface_addr/3,
               listening_socket/2,
               socket_port/2,
               socket_proto/2,

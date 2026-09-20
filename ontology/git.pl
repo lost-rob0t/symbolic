@@ -2,9 +2,9 @@
               commit/1,
               branch/1,
               tag/1,
-              worktree/2,
+              worktree/3,
               tag_points_at/2,
-              branch_head/2,
+              branch_head/3,
               commit_parent/2,
               commit_in_repo/2,
               issue_ref/3
