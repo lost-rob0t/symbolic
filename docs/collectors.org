@@ -1,0 +1,107 @@
+#+TITLE: Collectors
+#+SUBTITLE: Machine capture pipelines projecting into the Symbolic ontology
+
+Collectors turn raw machine state into sanitized observations. Every
+collector obeys the secrets rule (AGENTS.md): redact before persisting or
+transmitting, never ingest env dumps, tokens, keys, or cookies.
+
+* ActivityWatch
+
+Collector for the local ActivityWatch server (aw-server-rust v0.13.2,
+default =http://127.0.0.1:5600=). Two files:
+
+- =collectors/activitywatch/aw_collect.py= — stdlib-only REST capture.
+- =collectors/activitywatch/aw_ingest.pl= — module =aw_ingest=, projects
+  the JSONL into the shared ontology under =ontology/=.
+
+** Endpoints used
+
+| Endpoint                                   | Purpose                          |
+|--------------------------------------------+----------------------------------|
+| =GET /api/0/info=                          | server version + hostname (status) |
+| =GET /api/0/buckets=                       | bucket inventory, =hostname= per bucket |
+| =GET /api/0/buckets/<id>/events?limit=N=   | recent events per bucket         |
+
+Bucket classification to observation =kind=:
+
+| Bucket type / id prefix           | kind      | payload fields used |
+|-----------------------------------+-----------+---------------------|
+| type =afkstatus= or id =aw-watcher-afk_*= | =afk=     | =data.status=       |
+| type =currentwindow= or id =aw-watcher-window_*= | =window=  | =data.app=, =data.title= |
+| anything else (web tabs, editor)  | skipped   | future slice        |
+
+aw-server-rust returns =duration= as float seconds; the python server
+returns ="0:00:01.000000"= style strings; both are normalized to
+=duration_s= (float). ISO-8601 =PT…= durations are also accepted.
+Timestamps are normalized to UTC seconds precision (=…Z=).
+
+** Redaction rule (hard secrets rule)
+
+Window titles are never persisted verbatim:
+
+1. every whitespace-delimited token longer than 30 characters is replaced
+   by =<redacted>= (a 100-char URL/secret can never survive truncation);
+2. the result is truncated to the first 80 characters.
+
+Titles are stored only in the JSONL observation file; they are never
+asserted into the ontology (no =window_title_i/2= facts from AW).
+
+** Incremental state
+
+=--state var/cache/aw_state.json= stores ={"buckets": {<bucket id>:
+<last event id>}}=. Events with =id <= last= are skipped when present, so
+repeated =make ingest-activitywatch= runs fetch only new events. The
+observation file is rewritten per run as the current batch; the ingest
+runs in the same =make= invocation. =--state= may be omitted for a full
+refetch.
+
+** Provenance mapping
+
+Each JSONL line becomes one knowledge item =aw_event(Bucket, EventId)=
+registered via =provenance:register_knowledge/3= with status
+=observation=, =asserted_by(aw_collector)=,
+=generator('aw_ingest','0.1.0')=, and =about(<app or host>)=.
+
+| JSONL field            | Ontology fact                                                              |
+|------------------------+-----------------------------------------------------------------------------|
+| =bucket=, =event_id=   | knowledge id =aw_event(Bucket, EventId)=; dedup key =aw_ingest:seen_event/1= |
+| =kind=, =event_id=, =bucket= | =activity:application_session_i(App, Start, End, usage_source(aw_event(B,Id), activitywatch))= (window) |
+| =bucket=, =event_id=   | =activity:usage_session_i(Host, App, Start, End, usage_source(aw_event(B,Id), activitywatch))= (window) |
+| =bucket=, =event_id=   | =activity:afk_interval_i(Start, End, aw_event(B,Id))= (afk)                  |
+| =app= (window)         | =desktop:application_i(App, aw_bucket(Bucket))= (once per app)               |
+| =timestamp= + =duration_s= | =End= computed via =parse_time/2= + =format_time/4=                       |
+| =collected_at=         | =provenance:observed_at_i/2=                                                 |
+| (constant)             | =provenance:observed_by_i(Key, aw_collector)=                                |
+| =bucket=               | =provenance:observation_source_i(Key, source(activitywatch, Bucket))=        |
+| =kind=                 | =provenance:observation_payload_i(Key, aw_event_kind(Kind))=                 |
+
+The =usage_source(aw_event(B,Id), activitywatch)= term doubles as the
+generated usage id, so =activity:app_of_usage/2= and
+=activity:activity_source/2= resolve for AW sessions.
+
+Deduplication is per knowledge item: =aw_ingest:seen_event/1= (dynamic)
+skips already-ingested =aw_event(Bucket, EventId)= keys within a process;
+the collector state file prevents refetch across runs.
+
+** Known gap
+
+=activity:application_session/2= (public wrapper) and =time_spent_rule=
+query =application_session_i/3=, while the declared dynamic predicate and
+this collector use the 4-argument form =application_session_i/4= (4th arg
+= provenance metadata). The wrapper predates the 4th argument and must be
+updated in an ontology slice; until then AW-derived application sessions
+are visible via =application_session_i/4= and =usage_session/4=.
+
+** Usage
+
+#+BEGIN_EXAMPLE
+make ingest-activitywatch
+python3 collectors/activitywatch/aw_collect.py status --url http://127.0.0.1:5600
+python3 collectors/activitywatch/aw_collect.py collect \
+    --url http://127.0.0.1:5600 --limit 500 \
+    --out var/observations/activitywatch.jsonl \
+    --state var/cache/aw_state.json
+#+END_EXAMPLE
+
+Tests: =tests/prolog/aw_ingest_tests.pl= against the sanitized fixture
+=tests/fixtures/aw_sample.jsonl= (4 synthetic events + 1 duplicate line).

@@ -66,3 +66,66 @@
   parser -> KB, symbolic MoE expert router
 - ActivityWatch collector (user-directed priority)
 - Prolog HTTP server + CLI
+
+* Iteration 2 — ActivityWatch collector (Auto-RAGE)
+
+** Run identity
+- Consumed issue :: slice 2 (ActivityWatch support)
+- Branch :: rage/2-activitywatch (from main @ 612da94)
+- Date :: 2026-09-19
+
+** Analyze (verified environment facts)
+- aw-server-rust v0.13.2 live on 127.0.0.1:5600, host =flake=, 4 buckets:
+  =aw-watcher-window_flake= (currentwindow), =aw-watcher-afk_flake=
+  (afkstatus), =aw-watcher-emacs_flake= (app.editor.activity),
+  =aw-watcher-web-brave_flake= (web.tab.current)
+- rust server returns event =duration= as float seconds; python server
+  emits ="0:00:01.000000"= strings; ISO-8601 =PT…= is also legal
+- events arrive newest-first with numeric ids; window events carry
+  =data{app,title}=, afk events carry =data{status}=
+- SWI 10.0.2: =format_time/4= with =posix= formats in LOCAL time;
+  =json_read_dict/2= throws =syntax_error(json(unexpected_end_of_file))=
+  at EOF and yields strings, not atoms
+
+** Design decisions (recorded, Auto-RAGE)
+1. *Window+AFK only.* Editor/web buckets are skipped for now (no clean
+   app/title mapping); a later slice can project them onto
+   =project_activity/4=. Rejected: shoehorning web tabs into app sessions.
+2. *Titles never enter the ontology.* Collector redacts (tokens >30 chars
+   → =<redacted>=, truncate 80) and only the JSONL carries titles; ingest
+   asserts no =window_title_i/2=. Rejected: trusting downstream redaction.
+3. *Event identity = knowledge identity.* Knowledge item
+   =aw_event(Bucket, EventId)= doubles as the =usage_source(…, activitywatch)=
+   usage id, so dedup (=seen_event/1=), provenance, and
+   =app_of_usage/activity_source= all key on the same term.
+4. *Incremental at the collector.* State file stores last event id per
+   bucket; JSONL is a per-run batch consumed by the same =make= invocation.
+5. *Stdlib-only collector, ontology-only ingest.* =urllib= + =json=;
+   ingest asserts only existing dynamic predicates plus provenance edges.
+
+** Adversarial review findings (fixed before realize)
+- =forall(member(Event,Events), ingest_event(Event))= failed the whole
+  file on a duplicate line — dedup skip is now an explicit success branch.
+- =Kind = Event.kind= bound a JSON *string* against =window/afk= atoms and
+  silently failed every event — all JSON strings are atomized on entry.
+- =format_time(..., posix)= produced local-time ends (UTC−4 host) —
+  replaced with =stamp_date_time(_, _, 0)= + =format_time/3=.
+- JSONL EOF raised =unexpected_end_of_file= instead of =end_of_file= —
+  reader catches exactly that term as clean EOF; malformed mid-file JSON
+  still raises.
+- =activity_source/2= keys on the inner usage id; test pinned to the
+  correct shape.
+
+** Acceptance criteria for this slice
+- [X] =make test= 33/33 (28 pre-existing + 5 new aw_ingest tests)
+- [X] Live =status= against aw-server-rust v0.13.2 exits 0
+- [X] Live collect: 1000 events, redaction assertions hold on real titles
+- [X] Incremental rerun fetches 0 events; live batch ingest 400/400
+- [X] =ingest-activitywatch= make target runs collect + ingest
+- [X] Dedup: second ingest of same file asserts 0 new facts
+
+** Known gap / next dependencies
+- =activity:application_session/2= wrapper and =time_spent_rule= still
+  query =application_session_i/3= while the declared predicate is =/4=;
+  ontology slice must update the wrapper (documented in
+  docs/collectors.org) so =time_spent/3= sees AW sessions.

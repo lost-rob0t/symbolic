@@ -3,6 +3,7 @@ var/
 .prolog/result.json
 .prolog/facts.kb
 .prolog/verify.pl
+.prolog/.facts.lock
 __pycache__/
 *.pyc
 result
