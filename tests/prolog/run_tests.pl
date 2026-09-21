@@ -8,11 +8,13 @@ run_all(Dir) :-
     atomic_list_concat([Dir, '/learning_tests.pl'], T3),
     atomic_list_concat([Dir, '/aw_ingest_tests.pl'], T4),
     atomic_list_concat([Dir, '/rlm_tests.pl'], T5),
+    atomic_list_concat([Dir, '/outcome_tests.pl'], T6),
     consult(T1),
     consult(T2),
     consult(T3),
     consult(T4),
     consult(T5),
+    consult(T6),
     run_tests.
 
 :- (   prolog_load_context(source, Src),

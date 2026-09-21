@@ -89,6 +89,10 @@ registry(source_code:language_i/2).
 registry(source_code:file_in_repo_i/3).
 registry(documentation:documents_i/2).
 registry(learning:proposal_i/3).
+registry(outcome:attempt_i/4).
+registry(outcome:attempt_outcome_i/3).
+registry(outcome:solution_i/4).
+registry(outcome:failure_sim_threshold_i/1).
 registry(learning:proposal_state_i/2).
 registry(learning:vote_i/4).
 registry(learning:shadow_result_i/3).
@@ -104,6 +108,9 @@ registry(source_code:repo_head_i/3).
 registry(documentation:doc_section_i/3).
 registry(documentation:doc_format_i/2).
 registry(notification:notification_i/2).
+registry(outcome:attempt_i/4).
+registry(outcome:attempt_outcome_i/3).
+registry(outcome:solution_i/4).
 
 kb_reset :-
     forall(registry(M:Name/Arity),
