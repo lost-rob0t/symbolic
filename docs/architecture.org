@@ -221,3 +221,28 @@
   time_spent(emacs, _, 5400s); selections recorded as inferences
 - Live ActivityWatch: 100 real events collected + ingested with
   provenance and dedup
+
+* Iteration 4 — outcome tracking, embeddings, dotfiles expert deployment
+
+** Decision record
+1. Outcome layer (ontology/outcome.pl): attempts record expert, goal,
+   outcome success|failure, error text + embedding; solutions record
+   signature/steps/source and are suggested when a NEW failure is
+   embedding-similar to a solved one. Declared explainable rules:
+   failure_similarity_rule, solution_suggestion_rule.
+2. Embeddings (rlm/tools/embeddings.pl): local deterministic feature
+   hashing (sha1 sign + 256 dims, L2-normalized sparse) — no LLM provider
+   dependency; swap-in of provider embeddings can come later behind the
+   same embed_text/2 interface.
+3. Dict-free expert path: SWI 10.0.2 showed repeated silent deaths with
+   dict-bearing terms in registry compare/assert flows. Contracts are
+   plain expert_contract/5, answers/reports plain compounds with
+   positional access. Same semantics, no VM instability.
+4. Dotfiles Expert deployed in ~/.dotfiles (master, GitHub 97534b85+):
+   .zara/experts/dotfiles_expert/{upstream.pl,dotfiles_expert.pl,tests}.
+   Upstream = this repository (SYMBOLIC_HOME, fail-closed), provenance
+   stamp on every answer, all invocations tracked via with_attempt so
+   failures surface warnings + KB solutions to the calling model.
+   Symbolic side: integrations/dotfiles/dotfiles_integration.pl mines
+   ~/.dotfiles (repo id `dotfiles`, 1522 files) and loads the expert
+   into the registry at load time.
