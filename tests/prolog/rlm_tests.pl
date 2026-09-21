@@ -18,7 +18,7 @@ test(registry_and_registration) :-
     current_registry(Registry),
     expert_catalog(Registry, Experts),
     member(E, Experts),
-    E.id == software_debugger,
+    contract_id(E, software_debugger),
     registered_experts(All),
     length(All, N),
     N >= 13.
@@ -26,44 +26,36 @@ test(registry_and_registration) :-
 test(expert_select_orders_by_priority) :-
     current_registry(Registry),
     expert_select(Registry, kb_docs(foo, _Docs), none, ok([Best|_])),
-    Best.id == kb_docs_expert.
+    contract_id(Best, kb_docs_expert).
 
 test(moe_route_picks_debugger) :-
     assertz(computing:service_state_i(mysvc, failed, '2026-09-19T10:00:00Z')),
     current_registry(Registry),
     moe_route(Registry, debug(mysvc), Outcome),
     Outcome = ok(Report, Contract, _Score),
-    Contract.id == software_debugger,
-    get_dict(candidates, Report, Candidates),
+    contract_id(Contract, software_debugger),
+    Report = debug_report(_, Candidates, _),
     Candidates \= [],
     member(cause(Cause, _Ev, _Proof), Candidates),
     Cause = broken_service(failed, '2026-09-19T10:00:00Z').
 
 test(moe_route_falls_through_failing_handler) :-
     current_registry(Registry),
-    Failing = expert_contract{id: failing_expert,
-                              version: '0.1.0',
-                              goal: probe/1,
-                              priority: 90,
-                              requires: [],
-                              handler: rlm_tests:always_fail},
-    Passing = expert_contract{id: passing_expert,
-                              version: '0.1.0',
-                              goal: probe/1,
-                              priority: 10,
-                              requires: [],
-                              handler: rlm_tests:always_ok},
+    Failing = expert_contract(failing_expert, '0.1.0', probe/1, 90,
+                              rlm_tests:always_fail),
+    Passing = expert_contract(passing_expert, '0.1.0', probe/1, 10,
+                              rlm_tests:always_ok),
     expert_register(Registry, Failing, _),
     expert_register(Registry, Passing, _),
     moe_route(Registry, probe(x), Outcome),
     Outcome = ok(Value, Contract, _),
-    Contract.id == passing_expert,
+    contract_id(Contract, passing_expert),
     Value == fine.
 
 test(moe_selection_recorded_with_provenance) :-
     moe_selections(Sels),
     Sels \= [],
-    member(sel(_T, Goal, _Expert, selection{score:_S, attempted:_A}), Sels),
+    member(sel(_T, Goal, _Expert, selection(_S, _A)), Sels),
     provenance:inference(_),
     true.
 

@@ -17,13 +17,13 @@
 
 moe_register(Registry, Contract, Keywords) :-
     expert_register(Registry, Contract, _),
-    assertz(expert_keywords_i(Contract.id, Keywords)).
+    contract_id(Contract, CId),
+    assertz(expert_keywords_i(CId, Keywords)).
 
 moe_route(Registry, Goal, Outcome) :-
-    ground(Goal),
     moe_rank(Registry, Goal, Ranked),
     (   Ranked == []
-    ->  Outcome = error(expert_error{kind:no_expert, detail:Goal})
+    ->  Outcome = error(expert_error(no_expert, Goal))
     ;   try_chain(Ranked, Goal, Outcome0, Attempted),
         (   Outcome0 = ok(Value, Contract, Score)
         ->  record_selection(Goal, Contract, Score, Attempted),
@@ -32,8 +32,9 @@ moe_route(Registry, Goal, Outcome) :-
         )
     ).
 
-try_chain([], _Goal, error(expert_error{kind:all_experts_failed, detail:none}), []).
-try_chain([best(Contract, Score)|Rest], Goal, Outcome, [at(Contract.id, Status)|Tail]) :-
+try_chain([], _Goal, error(expert_error(all_experts_failed, none)), []).
+try_chain([best(Contract, Score)|Rest], Goal, Outcome, [at(CId, Status)|Tail]) :-
+    contract_id(Contract, CId),
     (   run_handler(Contract, Goal, Value, ok)
     ->  Status = ok,
         Outcome = ok(Value, Contract, Score),
@@ -43,7 +44,7 @@ try_chain([best(Contract, Score)|Rest], Goal, Outcome, [at(Contract.id, Status)|
     ).
 
 run_handler(Contract, Goal, Value, ok) :-
-    Handler = Contract.handler,
+    contract_handler(Contract, Handler),
     catch(call(Handler, Goal, moe, Value), _, fail),
     \+ Value = error(_).
 
@@ -60,8 +61,9 @@ moe_rank(Registry, Goal, Ranked) :-
     pairs_values(Pairs, Ranked).
 
 score_expert(Contract, GoalAtom, Score) :-
-    get_dict(priority, Contract, Priority),
-    (   expert_keywords_i(Contract.id, Keywords)
+    contract_priority(Contract, Priority),
+    (   contract_id(Contract, CId0),
+        expert_keywords_i(CId0, Keywords)
     ->  true
     ;   Keywords = []
     ),
@@ -89,7 +91,7 @@ moe_council(Registry, Goal, K, Values, Trace) :-
     ),
     findall(Value-Contract,
             (   member(best(Contract, _Score), Top),
-                Handler = Contract.handler,
+                contract_handler(Contract, Handler),
                 catch(call(Handler, Goal, council, Value), _, fail),
                 \+ Value = error(_)
             ),
@@ -100,9 +102,10 @@ moe_council(Registry, Goal, K, Values, Trace) :-
 
 record_selection(Goal, Contract, Score, Attempted) :-
     core:iso_now(Now),
-    assertz(moe_selection_i(Now, Goal, Contract.id,
-                            selection{score:Score, attempted:Attempted})),
-    format(atom(Kid), 'moe_sel_~w_~w', [Now, Contract.id]),
+    contract_id(Contract, CId),
+    assertz(moe_selection_i(Now, Goal, CId,
+                            selection(Score, Attempted))),
+    format(atom(Kid), 'moe_sel_~w_~w', [Now, CId]),
     provenance:register_knowledge(Kid, inference,
                                   [asserted_by(symbolic_moe_router)]).
 

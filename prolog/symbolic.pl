@@ -34,7 +34,11 @@ symbolic_load_all(Root) :-
     expand_file_name(ExpGlob2, ExpFiles2),
     forall((member(F, ExpFiles2),
             \+ sub_atom(F, _, _, _, 'symbolic_moe')),
-           ensure_loaded(F)).
+           ensure_loaded(F)),
+    format(atom(IntGlob), '~w/integrations/*/*.pl', [Root]),
+    expand_file_name(IntGlob, IntFiles),
+    forall(member(F, IntFiles), ensure_loaded(F)),
+    ignore(dotfiles_integration:dotfiles_upstream_init).
 
 ensure_loaded(File) :-
     loaded_rlm_file(File),

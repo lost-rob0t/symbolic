@@ -9,7 +9,11 @@
               expert_catalog/2,
               expert_select/4,
               expert_invoke/5,
-              expert_call/4
+              expert_call/4,
+              contract_id/2,
+              contract_goal/2,
+              contract_priority/2,
+              contract_handler/2
           ]).
 
 :- use_module(library(lists)).
@@ -83,6 +87,26 @@ expert_call(Registry, Goal, Context, Outcome) :-
 current_registry(Registry) :-
     symbolic_rlm_init,
     current_registry_i(Registry).
+
+contract_id(Contract, Id) :-
+    registry_call_contract(contract_id(Contract, Id)).
+
+contract_goal(Contract, Goal) :-
+    registry_call_contract(contract_goal(Contract, Goal)).
+
+contract_priority(Contract, P) :-
+    registry_call_contract(contract_priority(Contract, P)).
+
+contract_handler(Contract, H) :-
+    registry_call_contract(contract_handler(Contract, H)).
+
+registry_call_contract(Goal) :-
+    (   backend(compat)
+    ->  expert_registry_compat:Goal
+    ;   backend(upstream(_))
+    ->  rlm_expert:Goal
+    ;   throw(error(registry_backend_uninitialized, _))
+    ).
 
 with_registry(Goal) :-
     current_registry(Registry),

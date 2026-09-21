@@ -18,120 +18,68 @@ register_all :-
            )).
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_query_expert,
-                               version: '0.1.0',
-                               goal: kb_query/2,
-                               priority: 40,
-                               requires: [],
-                               handler: expert_registration:kb_query_handler},
+    Contract = expert_contract(kb_query_expert, '0.1.0', kb_query/2, 40,
+                               expert_registration:kb_query_handler),
     Keywords = [query, ask, facts, find, all].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_explain_expert,
-                               version: '0.1.0',
-                               goal: kb_explain_goal/2,
-                               priority: 40,
-                               requires: [],
-                               handler: expert_registration:kb_explain_handler},
+    Contract = expert_contract(kb_explain_expert, '0.1.0', kb_explain_goal/2, 40,
+                               expert_registration:kb_explain_handler),
     Keywords = [explain, why, proof, provenance, justify].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_related_expert,
-                               version: '0.1.0',
-                               goal: kb_related_goal/2,
-                               priority: 35,
-                               requires: [],
-                               handler: expert_registration:kb_related_handler},
+    Contract = expert_contract(kb_related_expert, '0.1.0', kb_related_goal/2, 35,
+                               expert_registration:kb_related_handler),
     Keywords = [related, connected, neighbors, graph].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_candidate_expert,
-                               version: '0.1.0',
-                               goal: kb_candidate/3,
-                               priority: 30,
-                               requires: [],
-                               handler: expert_registration:kb_candidate_handler},
+    Contract = expert_contract(kb_candidate_expert, '0.1.0', kb_candidate/3, 30,
+                               expert_registration:kb_candidate_handler),
     Keywords = [candidate, propose, learn, new_fact, new_rule].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_code_expert,
-                               version: '0.1.0',
-                               goal: kb_code/2,
-                               priority: 45,
-                               requires: [],
-                               handler: expert_registration:kb_code_handler},
+    Contract = expert_contract(kb_code_expert, '0.1.0', kb_code/2, 45,
+                               expert_registration:kb_code_handler),
     Keywords = [code, symbol, function, defines, where, search_code].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_docs_expert,
-                               version: '0.1.0',
-                               goal: kb_docs/2,
-                               priority: 45,
-                               requires: [],
-                               handler: expert_registration:kb_docs_handler},
+    Contract = expert_contract(kb_docs_expert, '0.1.0', kb_docs/2, 45,
+                               expert_registration:kb_docs_handler),
     Keywords = [docs, documentation, readme, manual, config_key].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_git_expert,
-                               version: '0.1.0',
-                               goal: kb_git/2,
-                               priority: 40,
-                               requires: [],
-                               handler: expert_registration:kb_git_handler},
+    Contract = expert_contract(kb_git_expert, '0.1.0', kb_git/2, 40,
+                               expert_registration:kb_git_handler),
     Keywords = [git, commit, history, introduced, last_changed].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_services_expert,
-                               version: '0.1.0',
-                               goal: kb_services/1,
-                               priority: 40,
-                               requires: [],
-                               handler: expert_registration:kb_services_handler},
+    Contract = expert_contract(kb_services_expert, '0.1.0', kb_services/1, 40,
+                               expert_registration:kb_services_handler),
     Keywords = [services, systemd, units, state].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_sessions_expert,
-                               version: '0.1.0',
-                               goal: kb_sessions/2,
-                               priority: 40,
-                               requires: [],
-                               handler: expert_registration:kb_sessions_handler},
+    Contract = expert_contract(kb_sessions_expert, '0.1.0', kb_sessions/2, 40,
+                               expert_registration:kb_sessions_handler),
     Keywords = [sessions, opencode, history, worked_before].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: kb_debug_ctx_expert,
-                               version: '0.1.0',
-                               goal: kb_debug_ctx/2,
-                               priority: 38,
-                               requires: [],
-                               handler: expert_registration:kb_debug_ctx_handler},
+    Contract = expert_contract(kb_debug_ctx_expert, '0.1.0', kb_debug_ctx/2, 38,
+                               expert_registration:kb_debug_ctx_handler),
     Keywords = [debug_context, evidence, gather].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: brave_expert,
-                               version: '0.1.0',
-                               goal: brave/2,
-                               priority: 20,
-                               requires: [],
-                               handler: expert_registration:brave_handler},
+    Contract = expert_contract(brave_expert, '0.1.0', brave/2, 20,
+                               expert_registration:brave_handler),
     Keywords = [web, search, brave, internet, lookup].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: web_fetch_expert,
-                               version: '0.1.0',
-                               goal: web_fetch_goal/2,
-                               priority: 20,
-                               requires: [],
-                               handler: expert_registration:web_fetch_handler},
+    Contract = expert_contract(web_fetch_expert, '0.1.0', web_fetch_goal/2, 20,
+                               expert_registration:web_fetch_handler),
     Keywords = [fetch, url, page, download].
 
 expert_spec(Contract, Keywords) :-
-    Contract = expert_contract{id: wikipedia_expert,
-                               version: '0.1.0',
-                               goal: wikipedia/2,
-                               priority: 20,
-                               requires: [],
-                               handler: expert_registration:wikipedia_handler},
+    Contract = expert_contract(wikipedia_expert, '0.1.0', wikipedia/2, 20,
+                               expert_registration:wikipedia_handler),
     Keywords = [wikipedia, encyclopedia, article, knowledge_article].
 
 kb_query_handler(kb_query(Goal, _Results), _Ctx, Value) :-

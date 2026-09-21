@@ -185,27 +185,15 @@ with_attempt(Expert, Goal, Report) :-
     (   catch(Goal, Err, true)
     ->  (   var(Err)
         ->  attempt_end(A, success, none),
-            Report = outcome_report{attempt: A,
-                                    outcome: success,
-                                    error: none,
-                                    warnings: [],
-                                    solutions: []}
+            Report = outcome_report(A, success, none, [], [])
         ;   error_text(Err, Txt),
             attempt_end(A, failure, Txt),
             failure_warnings(Txt, A, Warnings, Solutions),
-            Report = outcome_report{attempt: A,
-                                    outcome: failure,
-                                    error: Err,
-                                    warnings: Warnings,
-                                    solutions: Solutions}
+            Report = outcome_report(A, failure, Err, Warnings, Solutions)
         )
     ;   attempt_end(A, failure, 'goal_failed_without_exception'),
         failure_warnings('goal_failed_without_exception', A, Warnings, Solutions),
-        Report = outcome_report{attempt: A,
-                                outcome: failure,
-                                error: goal_failed,
-                                warnings: Warnings,
-                                solutions: Solutions}
+        Report = outcome_report(A, failure, goal_failed, Warnings, Solutions)
     ).
 
 :- dynamic attempt_seq_i/1.

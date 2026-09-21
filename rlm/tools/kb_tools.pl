@@ -158,4 +158,4 @@ kb_debug_context(Subject, Context) :-
                 Kind = doc, Term = doc(D, Title)
             ),
             Pieces),
-    Context = debug_context{subject:Subject, evidence:Pieces}.
+    Context = debug_context(Subject, Pieces).

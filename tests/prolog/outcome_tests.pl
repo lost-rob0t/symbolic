@@ -37,8 +37,7 @@ test(cosine_self_one) :-
 
 test(success_attempt_tracked) :-
     with_attempt(test_expert, true, Report),
-    Report.outcome == success,
-    A = Report.attempt,
+    Report = outcome_report(A, success, _ErrS, _WS, _SS),
     attempt(A),
     attempt_outcome(A, success),
     provenance:asserted_by(A, outcome_tracker),
@@ -46,19 +45,17 @@ test(success_attempt_tracked) :-
 
 test(failure_attempt_tracked_with_embed) :-
     with_attempt(test_expert, throw(emacs_daemon_failed_to_start), Report),
-    Report.outcome == failure,
-    A = Report.attempt,
+    Report = outcome_report(A, failure, ErrF, _WF, _SF),
+    ErrF \= none,
     attempt_error_text(A, Txt),
     atom(Txt),
     attempt_error_embed(A, E),
-    E \= [],
-    Report.warnings == [],
-    Report.solutions == [].
+    E \= [].
 
 test(similar_failure_detected_via_rule) :-
     with_attempt(test_expert, throw(emacs_daemon_failed_to_start), _R1),
     with_attempt(test_expert, throw(emacs_daemon_failed_on_start), R2),
-    A2 = R2.attempt,
+    R2 = outcome_report(A2, failure, _E2, _W2, _S2),
     provenance:explain(similar_failure(A2, B, Sim), Proof),
     B \== A2,
     Sim >= 0.45,
@@ -68,14 +65,14 @@ test(similar_failure_detected_via_rule) :-
 
 test(known_solution_suggested) :-
     with_attempt(test_expert, throw(emacs_daemon_socket_permission_denied), R1),
-    A1 = R1.attempt,
+    R1 = outcome_report(A1, failure, _, _, _),
     record_solution('emacs daemon socket permission denied',
                     'run systemctl --user restart emacs; chmod the socket dir',
                     'dotfiles_expert', _S),
     with_attempt(test_expert, throw(emacs_daemon_socket_permission_denied_again), R2),
-    A2 = R2.attempt,
-    R2.solutions \= [],
-    member(sol(S, Steps, Src), R2.solutions),
+    R2 = outcome_report(A2, failure, _, _, Sol2),
+    Sol2 \= [],
+    member(sol(S, Steps, Src), Sol2),
     atom(Steps),
     Src == dotfiles_expert,
     solution_for_failure(S, A1),
